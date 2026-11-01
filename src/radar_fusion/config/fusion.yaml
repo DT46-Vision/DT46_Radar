@@ -1,0 +1,4 @@
+radar_fusion:
+  ros__parameters:
+    targets_topic: /radar/targets
+    marks_topic: /radar/marks

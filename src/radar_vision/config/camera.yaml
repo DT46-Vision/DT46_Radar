@@ -1,0 +1,23 @@
+radar_vision:
+  ros__parameters:
+    pointcloud_topic: /livox/lidar
+    targets_topic: /radar/targets
+    publish_rate_hz: 5.0
+    image_width: 1440
+    image_height: 1080
+    exposure_time: 8000.0
+    gain: 16.0
+    grab_rate_hz: 30.0
+    show_image: true
+    enable_detect: true
+    enable_armor: true
+    car_conf: 0.35
+    car_iou: 0.45
+    car_model: ""
+    armor_conf: 0.40
+    armor_iou: 0.45
+    armor_model: ""
+    dump_dir: /tmp/radar_vision_dump
+    image_file: ""
+    # blue: B*=OUR R*=ENEMY; red: flipped. Matches 0x0305 slot order in Target.msg.
+    our_color: blue

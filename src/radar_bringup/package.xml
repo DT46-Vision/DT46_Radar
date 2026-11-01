@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>radar_bringup</name>
+  <version>0.1.0</version>
+  <description>第一阶段 launch。Livox 驱动和 XDU 裁判包在工作区外。</description>
+  <maintainer email="1519623572@qq.com">GlennAde</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>radar_vision</exec_depend>
+  <exec_depend>radar_fusion</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
