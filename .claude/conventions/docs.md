@@ -9,5 +9,6 @@
 | 雷达站包边界、参考项目、实现顺序、俯视相机、框内深度和场地投影 | [radar-station](../../.agents/skills/radar-station/SKILL.md) |
 | 2026 无线链路与裁判命令 | [radar-referee-link](../../.agents/skills/radar-referee-link/SKILL.md) |
 | Mid-70 实测数字、接线、本机网卡 | `Livox_MID-70` 仓库 README |
+| 给协作者看的雷达站说明（非维护入口） | [docs/](../../docs/) |
 
-同一事实只改负责入口，其他地方留链接。官方通信协议 PDF 更新后，只改 `radar-referee-link`。文本使用 UTF-8、无 BOM。
+`docs/` 是给人读的整理，标明来源技能；改选型或协议字段仍只改对应技能，再按需同步 `docs/`。同一事实只改负责入口，其他地方留链接。官方通信协议 PDF 更新后，只改 `radar-referee-link`。文本使用 UTF-8、无 BOM。

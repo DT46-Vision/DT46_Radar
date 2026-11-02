@@ -10,7 +10,7 @@ RoboMaster 雷达站工程。硬件是 Livox Mid-70 加俯视相机，软件是 
 
 - 是否已有裁判串口。信息波和干扰波先搁置。
 - XDU `rm_referee_ros2` 尚未放进工作区，也还没钉到协议 V2.0.0 对应的 tag。
-- 本目录尚未初始化 Git。
 
-点云上手和实测数字在 `Livox_MID-70` 的 README，不在这里复制。驱动源码在 `src/livox_ros2_driver/`。本仓接入：`tools/setup_livox_driver.sh`（补丁）→ `colcon build --packages-up-to livox_ros2_driver` → `ros2 launch radar_bringup livox_only.launch.py`（话题 `/livox/lidar`）。
+点云上手和实测数字在 `Livox_MID-70` 的 README，不在这里复制。驱动源码在 `src/livox_ros2_driver/`。本仓接入：`tools/setup_livox_driver.sh`（补丁）→ `colcon build --packages-up-to livox_ros2_driver` → `ros2 launch radar_bringup livox_only.launch.py`（话题 `/livox/lidar`）。ORT / `third_party` 见 [docs/getting-started.md](docs/getting-started.md)。
+
 

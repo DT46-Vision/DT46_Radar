@@ -15,11 +15,17 @@ find_package(radar_interfaces REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui imgcodecs)
 
-set(HIK_SDK_DIR "/home/glennade/DT46_V/src/rm_vision_ros2_hik_camera/hikSDK"
-  CACHE PATH "Existing Hikrobot MVS tree. Do not copy the libraries into this repo.")
+# Link against hikSDK under src/radar_hik_SDK (headers/libs only; not a ROS node).
+set(_HIK_SDK_DEFAULT "${CMAKE_CURRENT_SOURCE_DIR}/../radar_hik_SDK/hikSDK")
+if(EXISTS "${_HIK_SDK_DEFAULT}/include/MvCameraControl.h")
+  set(HIK_SDK_DIR "${_HIK_SDK_DEFAULT}" CACHE PATH
+    "Hikrobot MVS tree for radar_vision link only." FORCE)
+endif()
 if(NOT EXISTS "${HIK_SDK_DIR}/include/MvCameraControl.h")
   message(FATAL_ERROR "Hikrobot MVS headers not found: ${HIK_SDK_DIR}")
 endif()
+
+
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   set(HIK_SDK_LIB "${HIK_SDK_DIR}/lib/arm64")
 else()
@@ -49,23 +55,45 @@ endif()
 message(STATUS "ONNX Runtime: ${ONNXRUNTIME_ROOT} (cuda_major=${RADAR_VISION_ORT_CUDA_MAJOR})")
 
 # Pip NVIDIA CUDA / cuDNN libs. Match ORT CUDA major; do not mix 12 and 13 on RPATH.
-set(_NVIDIA_PY "$ENV{HOME}/.local/lib/python3.10/site-packages/nvidia")
+# Discover site-packages/nvidia via python3 (any minor), then ~/.local glob fallback.
+set(_NVIDIA_PY "")
+find_program(RADAR_VISION_PYTHON3 NAMES python3)
+if(RADAR_VISION_PYTHON3)
+  execute_process(
+    COMMAND "${RADAR_VISION_PYTHON3}" -c
+      "from pathlib import Path; import site;\nroots=[]\ntry:\n roots.append(Path(site.getusersitepackages()))\nexcept Exception:\n pass\ntry:\n roots += [Path(p) for p in site.getsitepackages()]\nexcept Exception:\n pass\nfor r in roots:\n n=r/'nvidia'\n if n.is_dir():\n  print(n); break"
+    OUTPUT_VARIABLE _NVIDIA_PY
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+endif()
+if(NOT _NVIDIA_PY)
+  file(GLOB _NVIDIA_GLOB
+    "$ENV{HOME}/.local/lib/python*/site-packages/nvidia"
+    "$ENV{HOME}/.local/lib/python*/dist-packages/nvidia")
+  if(_NVIDIA_GLOB)
+    list(GET _NVIDIA_GLOB 0 _NVIDIA_PY)
+  endif()
+endif()
+message(STATUS "NVIDIA pip libs root: ${_NVIDIA_PY}")
+
 set(RADAR_VISION_CUDA_RPATH "")
 if(RADAR_VISION_ORT_CUDA_MAJOR EQUAL 13)
   foreach(_sub IN ITEMS cu13/lib cudnn/lib)
-    if(EXISTS "${_NVIDIA_PY}/${_sub}")
+    if(_NVIDIA_PY AND EXISTS "${_NVIDIA_PY}/${_sub}")
       list(APPEND RADAR_VISION_CUDA_RPATH "${_NVIDIA_PY}/${_sub}")
     endif()
   endforeach()
 elseif(RADAR_VISION_ORT_CUDA_MAJOR EQUAL 12)
   foreach(_sub IN ITEMS
       cuda_runtime/lib cublas/lib cufft/lib curand/lib cudnn/lib cuda_nvrtc/lib)
-    if(EXISTS "${_NVIDIA_PY}/${_sub}")
+    if(_NVIDIA_PY AND EXISTS "${_NVIDIA_PY}/${_sub}")
       list(APPEND RADAR_VISION_CUDA_RPATH "${_NVIDIA_PY}/${_sub}")
     endif()
   endforeach()
 endif()
 list(REMOVE_DUPLICATES RADAR_VISION_CUDA_RPATH)
+
 
 add_executable(radar_vision_node
   src/vision_node.cpp

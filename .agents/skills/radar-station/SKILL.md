@@ -22,9 +22,9 @@ description: 规定 DT46_Radar 的包边界、参考仓库和实现顺序。在�
 
 点云进程用官方 `livox_ros2_driver`，约束见 [livox-mid70](../livox-mid70/SKILL.md)。
 
-俯视相机是海康机器人 MV-CS016-10UC。取图用传感器全幅 1440×1080、1×1，不 binning，不裁 ROI。检测的训练图和推理图都用这个分辨率。取图在 `radar_vision` 进程内完成，不发布 `/image_raw`。采集线程只保留最新一帧，标记发布仍是 5 Hz。调试画面用进程内窗口，参数 `show_image`。MVS 链本机已有的 `hikSDK`，不把 `.so` 复制进本仓库。`DT46_V` 的 `hik_camera` 留在视觉仓库给步兵用。
+俯视相机是海康机器人 MV-CS016-10UC。取图用传感器全幅 1440×1080、1×1，不 binning，不裁 ROI。检测的训练图和推理图都用这个分辨率。取图在 `radar_vision` 进程内完成，不发布 `/image_raw`。采集线程只保留最新一帧，标记发布仍是 5 Hz。调试画面用进程内窗口，参数 `show_image`。MVS 头文件和库链到本仓 `src/radar_hik_SDK/hikSDK`（闭源 `.so`，非 ROS 包，不编节点、不发图）。
 
-检测用 SHARK 的 `car.onnx` / `armor.onnx`（YOLOv5），放在 `radar_vision/model/`。先整车，再在车框 ROI 里跑装甲板。`armor.onnx` 输入 1280，类别 B1–B5、B7、R1–R5、R7。OpenCV DNN 加载不了这份导出，推理用本机 `third_party` 里的 ONNX Runtime：有 NVIDIA 设备且 ORT 带 CUDA EP 时用 GPU，否则 CPU。本机驱动报 CUDA 13 时用 `onnxruntime-linux-x64-gpu-1.28.0`（CUDA 13 EP）加 pip 的 `nvidia/cu13` 与 `cudnn`；勿把 CUDA 12 与 13 的库混进同一 RPATH。只用 CPU 包时即使有显卡也会回退 CPU。不用步兵的灯条检测。
+检测用 SHARK 的 `car.onnx` / `armor.onnx`（YOLOv5），放在 `radar_vision/model/`（随仓跟踪）。先整车，再在车框 ROI 里跑装甲板。`armor.onnx` 输入 1280，类别 B1–B5、B7、R1–R5、R7。OpenCV DNN 加载不了这份导出，推理用本机 `third_party` 里的 ONNX Runtime（目录 gitignore，不提交）：有 NVIDIA 设备且 ORT 带 CUDA EP 时用 GPU，否则 CPU。本机驱动报 CUDA 13 时用 `onnxruntime-linux-x64-gpu-1.28.0`（CUDA 13 EP）加 pip 的 `nvidia/cu13` 与 `cudnn`；勿把 CUDA 12 与 13 的库混进同一 RPATH。只用 CPU 包时即使有显卡也会回退 CPU。换机下载与解压步骤见 [docs/getting-started.md](../../../docs/getting-started.md)。不用步兵的灯条检测。
 
 `radar_vision` 按 5 Hz 发布 12 槽 `TargetArray`（顺序同 `0x0305`）。装甲 ID 经 `our_color`（blue/red）映射到敌我槽位，写入 `observed` 与 `confidence`；`x_cm`/`y_cm` 等 Mid-70 框内深度与外参后再填，当前为 0。同一槽多块装甲保留最高分。
 
