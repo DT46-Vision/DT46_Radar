@@ -1,0 +1,29 @@
+diff --git a/sdk_core/CMakeLists.txt b/sdk_core/CMakeLists.txt
+index 60037f6..1e85050 100644
+--- a/sdk_core/CMakeLists.txt
++++ b/sdk_core/CMakeLists.txt
+@@ -27,9 +27,9 @@ else(WIN32)
+ endif (WIN32)
+ 
+ target_compile_options(${SDK_LIBRARY}
+-        PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Werror -Wno-c++11-long-long>
+-        PRIVATE $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unknown-pragmas -Wall -Werror -Wno-c++11-long-long>
+-        PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wno-unknown-pragmas -Wall -Werror -Wno-c++11-long-long>)
++        PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>
++        PRIVATE $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unknown-pragmas -Wall>
++        PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wno-unknown-pragmas -Wall>)
+ 
+ target_sources(${SDK_LIBRARY}
+         PRIVATE
+diff --git a/sdk_core/src/base/thread_base.h b/sdk_core/src/base/thread_base.h
+index 35f7fbd..2c10ae4 100644
+--- a/sdk_core/src/base/thread_base.h
++++ b/sdk_core/src/base/thread_base.h
+@@ -26,6 +26,7 @@
+ #define LIVOX_THREAD_BASE_H_
+ #include <atomic>
+ #include <thread>
++#include <memory>
+ #include "noncopyable.h"
+ 
+ namespace livox {
