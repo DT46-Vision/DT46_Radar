@@ -77,9 +77,25 @@ ros2 launch radar_bringup livox_only.launch.py
 - 若系统里已有 `/usr/local/lib/liblivox_sdk_static.a` 且未带 `-fPIC`，链驱动会失败；编驱动前先挪走该库。
 - 未做 PTP/GPS 时，点云 `header.stamp` 是设备计数，不是 ROS 时间。
 
+## 仅视觉
+
+需本机已按上文放好 ORT，且海康相机可用：
+
+```bash
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch radar_vision vision.launch.py
+```
+
+话题：`/radar/targets`。`camera.yaml` 里 `show_image: true` 时会开预览窗。取图在进程内，不发布 `/image_raw`。
+
 ## 第一阶段
 
-`radar_bringup` 的 `phase1.launch.py` 拉起第一阶段节点（相机检测路径、融合占位等，以 launch 与包代码为准）。裁判串口依赖外部 `rm_referee`，本仓库不另写同名包。
+```bash
+ros2 launch radar_bringup phase1.launch.py
+```
+
+拉起 Mid-70 + `radar_vision` + `radar_fusion`（视觉目标转发到 `/radar/marks`）。裁判串口依赖外部 `rm_referee`，本仓库不另写同名包。
 
 ## 目录速查
 
@@ -89,6 +105,7 @@ ros2 launch radar_bringup livox_only.launch.py
 | `src/radar_vision/model/` | 检测 ONNX（已跟踪） |
 | `third_party/` | ORT 预编译包（gitignore，本机按上文准备） |
 | `src/radar_bringup/launch/` | `livox_only.launch.py`、`phase1.launch.py` |
+| `src/radar_vision/launch/` | `vision.launch.py`（仅视觉） |
 | `src/radar_bringup/config/livox_lidar_config.json` | Mid-70 连接配置 |
 | `tools/setup_livox_driver.sh` | 驱动补丁（缺目录时才克隆） |
 | `docs/` | 本目录：协作者说明 |

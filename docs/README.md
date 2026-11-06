@@ -9,6 +9,8 @@
 | [overview.md](overview.md) | 仓库做什么、包怎么分、实现顺序 |
 | [sensing.md](sensing.md) | Mid-70、俯视相机、框内深度与场地投影 |
 | [referee-link.md](referee-link.md) | 信息波 / 干扰波、标记、双倍易伤与裁判串口 |
+| [rmuc-radar-rules.md](rmuc-radar-rules.md) | RMUC 2026 雷达站规则摘录（机制 / 基座 / 制作） |
+| [rules/](rules/) | 官方规则与制作规范 PDF 本地副本 |
 | [getting-started.md](getting-started.md) | 本机编译、ORT/`third_party`、点云与第一阶段 launch |
 
 协作规则见根目录 [AGENTS.md](../AGENTS.md)。待确认项见根 [README.md](../README.md)。

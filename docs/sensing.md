@@ -15,6 +15,7 @@
 - 型号：海康机器人 MV-CS016-10UC。
 - 取图：传感器全幅 **1440×1080**、1×1，不 binning，不裁 ROI。训练与推理同分辨率。
 - 取图在 `radar_vision` 进程内完成，**不**发布 `/image_raw`。采集线程只保留最新一帧；标记发布仍是 5 Hz。
+- 内参在 `radar_vision/config/camera_info.yaml`（识别节点启动加载；当前为 hero 占位，俯视相机需重标）。`enable_undistort` 默认开，检测前按内参去畸变。场地投影还要相机–雷达 / 场地外参，内参 alone 不够。
 - 调试画面用进程内窗口（参数 `show_image`）。MVS 链本仓 `src/radar_hik_SDK/hikSDK`（仅 SDK，非 ROS 节点）。
 
 ## 检测

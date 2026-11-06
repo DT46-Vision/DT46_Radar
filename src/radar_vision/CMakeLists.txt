@@ -13,7 +13,8 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(radar_interfaces REQUIRED)
 find_package(ament_index_cpp REQUIRED)
-find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui imgcodecs)
+find_package(camera_calibration_parsers REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc calib3d highgui imgcodecs)
 
 # Link against hikSDK under src/radar_hik_SDK (headers/libs only; not a ROS node).
 set(_HIK_SDK_DEFAULT "${CMAKE_CURRENT_SOURCE_DIR}/../radar_hik_SDK/hikSDK")
@@ -97,6 +98,7 @@ list(REMOVE_DUPLICATES RADAR_VISION_CUDA_RPATH)
 
 add_executable(radar_vision_node
   src/vision_node.cpp
+  src/camera_intrinsics.cpp
   src/hik_frame_source.cpp
   src/ort_session.cpp
   src/car_detector.cpp
@@ -135,6 +137,7 @@ ament_target_dependencies(radar_vision_node
   sensor_msgs
   radar_interfaces
   ament_index_cpp
+  camera_calibration_parsers
 )
 
 install(TARGETS radar_vision_node DESTINATION lib/${PROJECT_NAME})

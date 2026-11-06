@@ -19,5 +19,8 @@ radar_vision:
     armor_model: ""
     dump_dir: /tmp/radar_vision_dump
     image_file: ""
+    # Empty: use share/config/camera_info.yaml (provisional hero copy until recalibrated).
+    camera_info_path: ""
+    enable_undistort: true
     # blue: B*=OUR R*=ENEMY; red: flipped. Matches 0x0305 slot order in Target.msg.
     our_color: blue
