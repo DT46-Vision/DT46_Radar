@@ -8,3 +8,4 @@ third_party/
 *.tgz
 src/radar_vision/model/*.jpg
 src/radar_vision/model/*.png
+docs/rules

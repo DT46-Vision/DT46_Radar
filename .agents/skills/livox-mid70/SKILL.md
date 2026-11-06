@@ -23,9 +23,22 @@ ROS 2 Humble 用官方 [livox_ros2_driver](https://github.com/Livox-SDK/livox_ro
 
 ## Ubuntu 22.04 上编译驱动
 
-`livox_sdk_vendor` 会拉取 Livox-SDK **v2.3.1**，并打开 `-fPIC`。该 tag 已经补了 `thread_base.h` 的 `<memory>`，`sdk_core/CMakeLists.txt` 仍是 `-Wall -Werror -Wno-c++11-long-long`。gcc 11 不认识这个选项，源码里再有别的警告就会编失败。把现有补丁里去掉 `-Werror` 的那一处打进 vendor 构建。
+官方 `livox_ros2_driver` 以源码树放在 `src/livox_ros2_driver/`（随本仓跟踪）。`tools/setup_livox_driver.sh` 在缺目录时才克隆，平时只把 gcc 11 补丁挂进 `livox_sdk_vendor` 的 ExternalProject。然后：
+
+```bash
+source /opt/ros/humble/setup.bash
+cd <本仓库根目录>
+colcon build --packages-up-to livox_ros2_driver
+source install/setup.bash
+ros2 launch radar_bringup livox_only.launch.py
+```
+
+
+`livox_sdk_vendor` 会拉取 Livox-SDK **v2.3.1**，并打开 `-fPIC`。该 tag 已经补了 `thread_base.h` 的 `<memory>`，`sdk_core/CMakeLists.txt` 仍是 `-Wall -Werror -Wno-c++11-long-long`。gcc 11 不认识这个选项，源码里再有别的警告就会编失败。补丁在 `tools/patches/livox-sdk-ubuntu2204-gcc11.patch`，由 setup 脚本挂上。本机若是 CMake 4.x，ExternalProject 还需 `-DCMAKE_POLICY_VERSION_MINIMUM=3.5`（setup 脚本已加）。
 
 如果 `/usr/local/lib/liblivox_sdk_static.a` 已存在，`find_package` 会用它并跳过 vendor。那份库若没有 `-fPIC`，链进 `liblivox_ros2_driver.so` 会报 `R_X86_64_TPOFF32`。编驱动前先把这份系统静态库挪走。
+
+`radar_bringup/config/livox_lidar_config.json` 的 15 位广播码必须与 `Livox_MID-70` README 实测 SN 一致；本技能不复制该数字。
 
 ## 连这台雷达时的接口约定
 

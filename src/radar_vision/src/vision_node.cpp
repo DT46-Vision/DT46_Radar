@@ -15,6 +15,7 @@
 #include "radar_interfaces/msg/target.hpp"
 #include "radar_interfaces/msg/target_array.hpp"
 #include "radar_vision/armor_detector.hpp"
+#include "radar_vision/camera_intrinsics.hpp"
 #include "radar_vision/car_detector.hpp"
 #include "radar_vision/frame_source.hpp"
 #include "radar_vision/ort_session.hpp"
@@ -82,6 +83,8 @@ public:
     camera.gain = declare_parameter<double>("gain", 16.0);
     camera.frame_rate_hz = declare_parameter<double>("grab_rate_hz", 30.0);
     camera.image_file = declare_parameter<std::string>("image_file", "");
+    auto camera_info_path = declare_parameter<std::string>("camera_info_path", "");
+    enable_undistort_ = declare_parameter<bool>("enable_undistort", true);
     show_image_ = declare_parameter<bool>("show_image", false);
     enable_detect_ = declare_parameter<bool>("enable_detect", true);
     enable_armor_ = declare_parameter<bool>("enable_armor", true);
@@ -109,6 +112,45 @@ public:
     image_height_ = camera.height;
 
     const auto share = ament_index_cpp::get_package_share_directory("radar_vision");
+    if (camera_info_path.empty()) {
+      camera_info_path = share + "/config/camera_info.yaml";
+    }
+    if (load_camera_intrinsics(camera_info_path, camera_intrinsics_)) {
+      RCLCPP_INFO(
+        get_logger(),
+        "Camera intrinsics %s %dx%d fx=%.2f fy=%.2f cx=%.2f cy=%.2f from %s",
+        camera_intrinsics_.camera_name.c_str(),
+        camera_intrinsics_.width, camera_intrinsics_.height,
+        camera_intrinsics_.fx(), camera_intrinsics_.fy(),
+        camera_intrinsics_.cx(), camera_intrinsics_.cy(),
+        camera_info_path.c_str());
+      if (camera_intrinsics_.width != camera.width ||
+        camera_intrinsics_.height != camera.height)
+      {
+        RCLCPP_WARN(
+          get_logger(),
+          "camera_info size %dx%d != grab %dx%d; recalibrate or fix image_width/height",
+          camera_intrinsics_.width, camera_intrinsics_.height,
+          camera.width, camera.height);
+      }
+      if (enable_undistort_) {
+        if (camera_intrinsics_.build_undistort_maps(undistort_map1_, undistort_map2_)) {
+          undistort_ready_ = true;
+          RCLCPP_INFO(get_logger(), "Undistort maps ready (enable_undistort=true).");
+        } else {
+          RCLCPP_WARN(get_logger(), "Failed to build undistort maps; using raw frames.");
+        }
+      }
+    } else {
+      RCLCPP_WARN(
+        get_logger(),
+        "Failed to load camera_info from %s; projection will lack intrinsics until recalibrated",
+        camera_info_path.c_str());
+      if (enable_undistort_) {
+        RCLCPP_WARN(get_logger(), "enable_undistort ignored without valid camera_info.");
+      }
+    }
+
     if (enable_detect_) {
       if (car_model.empty()) {
         car_model = share + "/model/car.onnx";
@@ -163,10 +205,11 @@ public:
 
     RCLCPP_INFO(
       get_logger(),
-      "Grab %.1f Hz, detect=%s armor=%s show=%s, ORT prefer=%s, our_color=%s.",
+      "Grab %.1f Hz, detect=%s armor=%s undistort=%s show=%s, ORT prefer=%s, our_color=%s.",
       camera.frame_rate_hz,
       enable_detect_ ? "yes" : "no",
       (enable_detect_ && enable_armor_ && armor_detector_) ? "yes" : "no",
+      undistort_ready_ ? "yes" : "no",
       show_image_ ? "yes" : "no",
       OrtSessionFactory::instance().prefers_cuda() ? "cuda" : "cpu",
       our_is_blue_ ? "blue" : "red");
@@ -241,6 +284,7 @@ private:
         const cv::Mat rgb(frame.height, frame.width, CV_8UC3, frame.rgb.data());
         cv::Mat bgr;
         cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
+        bgr = maybe_undistort(bgr);
         car_dets = car_detector_->infer(bgr);
         if (enable_armor_ && armor_detector_) {
           for (const auto & car : car_dets) {
@@ -253,7 +297,7 @@ private:
           show_frame(bgr, car_dets, armor_dets);
         }
       } else if (show_image_) {
-        show_frame(frame);
+        show_frame(maybe_undistort_frame(frame));
       }
 
       {
@@ -352,6 +396,38 @@ private:
     }
   }
 
+  cv::Mat maybe_undistort(const cv::Mat & bgr) const
+  {
+    if (!undistort_ready_ || bgr.empty()) {
+      return bgr;
+    }
+    if (bgr.cols != camera_intrinsics_.width || bgr.rows != camera_intrinsics_.height) {
+      return bgr;
+    }
+    cv::Mat out;
+    cv::remap(bgr, out, undistort_map1_, undistort_map2_, cv::INTER_LINEAR);
+    return out;
+  }
+
+  Frame maybe_undistort_frame(const Frame & frame) const
+  {
+    if (frame.rgb.empty()) {
+      return frame;
+    }
+    const cv::Mat rgb(
+      frame.height, frame.width, CV_8UC3, const_cast<uint8_t *>(frame.rgb.data()));
+    cv::Mat bgr;
+    cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
+    bgr = maybe_undistort(bgr);
+    Frame out;
+    out.width = bgr.cols;
+    out.height = bgr.rows;
+    cv::Mat rgb_out;
+    cv::cvtColor(bgr, rgb_out, cv::COLOR_BGR2RGB);
+    out.rgb.assign(rgb_out.datastart, rgb_out.dataend);
+    return out;
+  }
+
   void show_frame(const Frame & frame)
   {
     if (frame.rgb.empty()) {
@@ -424,6 +500,11 @@ private:
   std::unique_ptr<FrameSource> frame_source_;
   std::unique_ptr<CarDetector> car_detector_;
   std::unique_ptr<ArmorDetector> armor_detector_;
+  CameraIntrinsics camera_intrinsics_;
+  cv::Mat undistort_map1_;
+  cv::Mat undistort_map2_;
+  bool enable_undistort_{true};
+  bool undistort_ready_{false};
   std::string targets_topic_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
   rclcpp::Publisher<radar_interfaces::msg::TargetArray>::SharedPtr targets_pub_;
